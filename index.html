@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10252e">
+<title>海图没有你的名字 · 原创 RPG</title>
+<style>
+:root {
+  --ink: #112b34; --deep: #0d2028; --panel: #19323b;
+  --panel2: #203c43; --line: #3d5558; --paper: #efe2c2;
+  --muted: #a5b5ad; --white: #f9f5e8;
+  --gold: #eec67b; --teal: #88c7b4; --coral: #ef9b82;
+  --blue: #8facd8; --shadow: rgba(4,13,19,.32);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height:100vh;
+  background: radial-gradient(ellipse at 5% 0, #274a50 0, transparent 39%),
+              radial-gradient(ellipse at 100% 60%, #23383f 0, transparent 39%),
+              var(--deep);
+  color: var(--white); font-family: "PingFang SC","Microsoft Yahei",system-ui,sans-serif;
+  line-height: 1.45;
+}
+button { font: inherit; cursor: pointer; }
+button:focus-visible, canvas:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+button:disabled { cursor: not-allowed; opacity:.38; }
+.shell { max-width: 1390px; margin:auto; padding: 29px clamp(16px,3vw,45px) 22px; }
+.topline { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.brand { font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--gold); }
+.issue { font-size:11px; color:var(--muted); letter-spacing:.12em; }
+.rule { width:100%; border-top:1px solid #47616a; opacity:.7; margin:14px 0 18px; }
+.intro-head { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+h1 { font-family:"Songti SC","Noto Serif CJK SC","SimSun",serif; font-size:clamp(30px,4.3vw,56px); font-weight:600; letter-spacing:.075em; line-height:1.13; margin:0 0 12px; }
+.subtitle { color:#bbcbc1; margin:0; font-size:14px; }
+.chapter-pill { padding:10px 16px; border:1px solid #6d796b; border-radius:100px;
+ color:#edd6ab; background:rgba(228,199,127,.07); font-size:12px; white-space:nowrap; }
+.layout { display:grid; grid-template-columns:minmax(0, 1.65fr) minmax(300px,.82fr); gap:22px; margin-top:25px; align-items:start; }
+.gamecard,.sidebar-block { background:linear-gradient(165deg,#1d3941,#152d37); border:1px solid #476067; border-radius:19px; box-shadow:0 22px 70px var(--shadow); overflow:hidden; }
+.map-header { padding:15px 19px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.overline { font-size:10px; color:var(--gold); letter-spacing:.22em; font-weight:800; display:block; margin-bottom:5px; }
+#placeName { font-family:"Songti SC","SimSun",serif; font-size:22px; letter-spacing:.08em; margin:0; }
+#placeDesc { color:#b6c2b6; font-size:12px; margin:2px 0 0; }
+#chapterCounter { font-size:11px; color:#c7d8c4; border:1px solid #57716b; border-radius:20px; padding:6px 10px; flex-shrink:0; }
+.canvas-wrap { position:relative; margin:0 13px; border:5px solid #293e41; border-radius:13px; overflow:hidden; background:#d9c49b; box-shadow:inset 0 0 0 1px #fff3d0; }
+canvas { width:100%; display:block; aspect-ratio:16/11; touch-action:manipulation; cursor:crosshair; image-rendering:auto; }
+.corner-label { position:absolute; right:11px; top:10px; border:1px solid rgba(255,245,217,.4); background:rgba(18,47,47,.78);
+ border-radius:100px; color:#f1e8cb; font-size:10px; padding:6px 10px; pointer-events:none; }
+.bottom-area { display:flex; gap:12px; justify-content:space-between; align-items:center; padding:15px 18px; flex-wrap:wrap; }
+.helptext { font-size:12px; color:#bacac0; max-width:360px; }
+.helptext strong { color:var(--gold); }
+.controls { display:flex; align-items:center; gap:15px; }
+.pad { display:grid; grid-template-columns:repeat(3,35px); grid-template-rows:repeat(3,32px); gap:3px; }
+.pad button { background:#304e54; color:#f9edd4; border:1px solid #608080; border-radius:8px; font-size:15px; }
+.pad button:hover { background:#537178; }
+.pad .up { grid-column:2; grid-row:1; }
+.pad .left { grid-column:1; grid-row:2; }
+.pad .center { grid-column:2; grid-row:2; font-size:10px; background:#d4ab68; color:#17323a; font-weight:900; }
+.pad .right { grid-column:3; grid-row:2; }
+.pad .down { grid-column:2; grid-row:3; }
+.main-act { height:46px; padding:0 14px; border:1px solid #d8c393; background:rgba(220,183,119,.10); border-radius:12px; color:#f3dba9; font-weight:700; }
+.main-act:hover { background:rgba(220,183,119,.22); }
+.sidebar { display:flex; flex-direction:column; gap:15px; }
+.sidebar-block { padding:17px 18px; box-shadow:0 10px 38px rgba(4,13,19,.18); }
+.side-title { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px; }
+.side-title strong { letter-spacing:.13em; font-size:12px; color:#e8e1c5; }
+.side-title span { font-size:11px; color:#8fb4ae; }
+.player-name { font-family:"Songti SC","SimSun",serif; font-size:24px; margin-bottom:4px; }
+.player-class { font-size:11px; color:#b4c5bc; margin-bottom:16px; }
+.bar-line { display:flex; justify-content:space-between; align-items:center; margin:11px 0 5px; font-size:12px; color:#cdd8cb; }
+.bar-line strong { color:#eae9d9; font-size:12px; font-variant-numeric:tabular-nums; }
+.track { height:8px; width:100%; background:#11262e; border-radius:100px; overflow:hidden; box-shadow:inset 0 0 2px #0005; }
+.track > i { display:block; height:100%; width:50%; border-radius:100px; transition:width .2s ease; }
+.hpbar { background:linear-gradient(90deg,#d27c76,#f3a88a); }
+.mpbar { background:linear-gradient(90deg,#6796ae,#a2b9d5); }
+.xpbar { background:linear-gradient(90deg,#9fb989,#dbce85); }
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:17px; }
+.statbox { background:#112831; border:1px solid #38545a; border-radius:9px; padding:10px 5px; text-align:center; }
+.statbox small { display:block; color:#8faea7; font-size:10px; margin-bottom:3px; }
+.statbox b { font-size:17px; color:#f3e1b7; }
+.quests { display:flex; flex-direction:column; gap:10px; }
+.quest { display:flex; align-items:center; gap:11px; padding:9px 10px; border:1px solid #3c5a5a; background:#172f37; border-radius:10px; }
+.quest.done { background:#233f3d; border-color:#5b7770; }
+.quest-glyph { height:31px; width:31px; flex-shrink:0; display:grid; place-items:center;
+ border:1px solid #786c59; border-radius:9px; background:#273d40; color:#e6c183; font-size:18px; }
+.quest.done .quest-glyph { color:#9cdbc5; border-color:#6b9f90; }
+.quest-name { font-size:12px; font-weight:700; color:#e8eddf; }
+.quest-desc { color:#9fb4af; font-size:10px; margin-top:2px; }
+#inventory { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.item { display:flex; align-items:center; gap:9px; border-radius:10px; padding:9px 10px; background:#132c34; font-size:11px; color:#ccdad0; }
+.item em { font-style:normal; font-size:18px; }
+.item b { display:block; color:#f5e9c6; font-size:13px; }
+#log { min-height:75px; max-height:140px; overflow:auto; }
+.logline { margin:0 0 9px; color:#baccc2; font-size:11px; padding-left:12px; position:relative; }
+.logline:before { content:'✦'; color:#c4a46e; position:absolute; left:0; }
+.utility { display:flex; gap:8px; flex-wrap:wrap; }
+.utility button { flex:1; border-radius:9px; background:#2c4950; color:#f0e4c6; padding:9px 8px; border:1px solid #607a78; font-size:12px; font-weight:600; }
+.utility button:hover { background:#3c5f64; }
+.footer { margin-top:20px; border-top:1px solid #47616a; display:flex; justify-content:space-between; gap:18px; padding-top:14px; font-size:11px; color:#8fa8a2; flex-wrap:wrap; }
+#toast { position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:27px; z-index:100;
+ padding:11px 17px; border-radius:12px; background:#f0dfb9; color:#19323b; font-size:13px; font-weight:700; opacity:0;
+ pointer-events:none; transition:opacity .2s,transform .2s; box-shadow:0 10px 50px #0006; max-width:min(90vw,550px); text-align:center; }
+#toast.shown { opacity:1; transform:translateX(-50%) translateY(0); }
+.overlay { position:fixed; z-index:50; inset:0; background:rgba(7,19,24,.84); backdrop-filter:blur(9px);
+ display:none; align-items:center; justify-content:center; padding:16px; overflow-y:auto; }
+.overlay.visible { display:flex; }
+.modal { width:min(580px,100%); max-height:95vh; overflow-y:auto; background:linear-gradient(155deg,#243e45,#142d36);
+ border:1px solid #8a937b; color:#f3e9d1; border-radius:19px; box-shadow:0 32px 100px #020c13; padding:clamp(20px,4vw,33px); position:relative; }
+.modal:before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid rgba(238,208,154,.13); border-radius:14px; pointer-events:none; }
+.modal-kicker { color:#e8c27a; letter-spacing:.22em; font-size:10px; font-weight:800; margin-bottom:12px; }
+.modal h2 { font-size:clamp(24px,4vw,35px); font-family:"Songti SC","SimSun",serif; font-weight:600; letter-spacing:.09em; margin:0 0 14px; }
+.modal p { color:#c6d4ca; line-height:1.88; font-size:14px; margin:0 0 18px; white-space:pre-line; }
+.modal-options { display:flex; flex-direction:column; gap:9px; margin-top:20px; }
+.modal-options button { text-align:left; border:1px solid #789188; border-radius:11px; padding:13px 15px; background:#304c50; color:#fff1d1; font-weight:700; transition:background .12s, transform .12s; }
+.modal-options button:hover:not(:disabled) { background:#44676b; transform:translateY(-1px); }
+.modal-options button.primary { color:#1d343b; background:#e7c888; border-color:#efdaaa; }
+.modal-options button.primary:hover { background:#f5dda6; }
+.modal-options button.secondary { background:transparent; border-color:#5b7777; color:#b9d2c9; }
+.modal-options button:disabled { opacity:.35; }
+.battle-enemy { display:flex; gap:14px; align-items:center; background:#112a33; padding:13px;
+ border:1px solid #4e7170; border-radius:12px; margin:17px 0; }
+.enemy-icon { width:60px; height:60px; flex-shrink:0; border-radius:50%; background:#324750; border:1px solid #a18a79;
+ display:grid; place-items:center; font-size:34px; text-shadow:0 3px 14px #0004; }
+.battle-enemy-info { flex:1; }
+.battle-enemy-info b { font-size:18px; }
+.battle-enemy-info small { display:block; font-size:11px; color:#c5bd9e; margin:5px 0; }
+.intent { border-left:2px solid #e6bb75; background:#263d41; padding:9px 12px;
+ border-radius:0 8px 8px 0; font-size:12px; color:#e4d8b9; }
+.battle-log { border-top:1px solid #506768; padding-top:12px; display:flex; flex-direction:column; gap:4px; color:#c2d1c5; min-height:57px; font-size:12px; }
+.battle-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px; }
+.battle-actions button { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 11px; text-align:left;
+ background:#304f53; border:1px solid #6c8884; border-radius:10px; color:#f4e6c7; font-weight:700; font-size:12px; }
+.battle-actions button:hover:not(:disabled) { background:#487171; }
+.battle-actions button small { font-weight:400; color:#c4d4c5; font-size:10px; }
+.battle-actions button:disabled { opacity:.3; }
+.battle-actions .main-spell { border-color:#c2a771; background:#5a4f42; }
+.battle-player-strip { display:flex; justify-content:space-between; gap:7px; font-size:11px; color:#bcd3cb; padding-top:9px; }
+.battle-player-strip strong { color:#ffe6b6; }
+@media (max-width:1040px) { .layout { grid-template-columns:1fr; } .sidebar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:650px) {
+ .shell { padding:18px 11px; }
+ .intro-head { gap:8px; }
+ .layout { margin-top:16px; gap:13px; }
+ .sidebar { grid-template-columns:1fr; }
+ .map-header { padding:12px; }
+ .canvas-wrap { margin:0 5px; border-width:3px; }
+ .bottom-area { padding:12px; }
+ .helptext { max-width:none; }
+ .controls { width:100%; justify-content:space-between; }
+ .pad { grid-template-columns:repeat(3,42px); grid-template-rows:repeat(3,37px); }
+ .main-act { height:49px; }
+ .chapter-pill { font-size:10px; padding:8px 10px; }
+}
+@media (prefers-reduced-motion:reduce) { *,*:before,*:after { transition:none!important; animation:none!important; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="topline"><div class="brand">无名海 · THE NAMELESS SEA</div><div class="issue">一场可以留下痕迹的旅程 / RPG 01</div></div>
+    <div class="rule"></div>
+    <div class="intro-head">
+      <div><h1>海图没有你的名字</h1><p class="subtitle">当海潮开始擦掉万物的名字，只有你还能听见空白的回声。</p></div>
+      <div class="chapter-pill">✦ 单文件 · 离线可玩 · 自动存档</div>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="gamecard" aria-label="游戏区域">
+      <div class="map-header">
+        <div><span class="overline">YOU ARE HERE / 当前位置</span><h2 id="placeName">墨港</h2><p id="placeDesc"></p></div>
+        <div id="chapterCounter">拾回片语 0 / 3</div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="game" width="768" height="528" tabindex="0" aria-label="RPG地图：方向键移动，E键交互"></canvas>
+        <div class="corner-label" id="mapTip">✦ 光点可以调查</div>
+      </div>
+      <div class="bottom-area">
+        <div class="helptext"><strong>移动</strong> WASD / 方向键 / 下方方向盘<br><strong>调查</strong> E / 空格 /「交互」按钮；靠近发光图标。<br>也可以点击相邻格子移动。</div>
+        <div class="controls">
+          <div class="pad" aria-label="方向操作">
+            <button type="button" data-dir="up" class="up" aria-label="向上">↑</button>
+            <button type="button" data-dir="left" class="left" aria-label="向左">←</button>
+            <button type="button" data-dir="right" class="right" aria-label="向右">→</button>
+            <button type="button" data-dir="down" class="down" aria-label="向下">↓</button>
+            <button type="button" class="center" id="padInteract" aria-label="交互">交互</button>
+          </div>
+          <button type="button" class="main-act" id="actionBtn">✦ 调查 / 交谈</button>
+        </div>
+      </div>
+    </section>
+    <aside class="sidebar">
+      <section class="sidebar-block">
+        <div class="side-title"><strong>拾名者手记</strong><span id="levelLabel">LV. 1</span></div>
+        <div class="player-name">未署名的旅人</div>
+        <div class="player-class">职业：拾名者 · 技艺：回声术</div>
+        <div id="stats"></div>
+      </section>
+      <section class="sidebar-block">
+        <div class="side-title"><strong>遗失的三个音节</strong><span id="questCount">0 / 3</span></div>
+        <div class="quests" id="quests"></div>
+      </section>
+      <section class="sidebar-block">
+        <div class="side-title"><strong>随身物品</strong><span>旅行背包</span></div>
+        <div id="inventory"></div>
+      </section>
+      <section class="sidebar-block">
+        <div class="side-title"><strong>旅途回声</strong><span>近期记录</span></div>
+        <div id="log"></div>
+      </section>
+      <section class="sidebar-block">
+        <div class="side-title"><strong>旅程管理</strong><span>本机存档</span></div>
+        <div class="utility">
+          <button type="button" id="saveBtn">存档</button>
+          <button type="button" id="loadBtn">读取</button>
+          <button type="button" id="helpBtn">说明</button>
+          <button type="button" id="resetBtn">重来</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+  <footer class="footer"><span>✦ 每一个名字，都曾是一条去往别处的路。</span><span>独立原创 · 幻想冒险 / 回合制战斗 / 分歧结局 · 无需联网</span></footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="overlay" class="overlay" aria-modal="true">
+  <div id="modal" class="modal" role="dialog" aria-label="游戏对话"></div>
+</div>
+<script>
+"use strict";
+(() => {
+const TS=48, MW=16, MH=11, KEY="nameless-sea-rpg-1";
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const el=id=>document.getElementById(id);
+const overlay=el("overlay"), modal=el("modal");
+const reduceMotion=window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PALETTES = {
+ harbor:{sand:"#ddcda8",pale:"#eee1bc",path:"#c5b58f",ink:"#44636a",leaf:"#65907c",sea:"#5e98a0",rock:"#a1a18b"},
+ coast:{sand:"#ebd7ab",pale:"#f4e4c2",path:"#c8b99d",ink:"#496b6b",leaf:"#80a59d",sea:"#689fa5",rock:"#9aa7a1"},
+ forest:{sand:"#b9c6a1",pale:"#d9dcb7",path:"#b5b59b",ink:"#435c57",leaf:"#628770",sea:"#719e9a",rock:"#889e83"},
+ observatory:{sand:"#c7beab",pale:"#e2d5ba",path:"#b8ad98",ink:"#576977",leaf:"#749087",sea:"#7d9ba7",rock:"#93909b"},
+ tower:{sand:"#a8b1ad",pale:"#d0cabc",path:"#aeb4a6",ink:"#4d6470",leaf:"#75897e",sea:"#7199a2",rock:"#818f94"}
+};
+const MAPS = {
+ harbor:{
+   name:"墨港", desc:"潮汐递送被遗忘的信，灯火为没有名字的人而亮。",
+   tiles:[
+   "################",
+   "#..T....:...T..#",
+   "#.......:......#",
+   "#..::...:...::.#",
+   "#..::...:...::.#",
+   "#..............#",
+   "#.....::::.....#",
+   "#.....::::.....#",
+   "#..T......T....#",
+   "#..............#",
+   "################"],
+   entities:[
+     {id:"h_coast",type:"portal",x:1,y:5,label:"退字滩",to:"coast",tx:13,ty:5,icon:"←"},
+     {id:"h_forest",type:"portal",x:8,y:1,label:"折页林",to:"forest",tx:8,ty:8,icon:"↑"},
+     {id:"h_obs",type:"portal",x:14,y:5,label:"眠星台",to:"observatory",tx:2,ty:5,icon:"→"},
+     {id:"h_tower",type:"portal",x:8,y:9,label:"终稿之塔",to:"tower",tx:8,ty:8,icon:"↓",locked:true},
+     {id:"a_zhu",type:"npc",x:6,y:4,label:"阿烛",hue:"#dd987a"},
+     {id:"healer",type:"healer",x:4,y:7,label:"守灯婆婆",hue:"#8ab3a0"},
+     {id:"shop",type:"shop",x:12,y:7,label:"鲛墨商",hue:"#a8a0d1"},
+     {id:"h_sign",type:"lore",x:10,y:3,label:"旧海图",body:"墨港的地图只有道路，没有地名。\n背面写着：『名字不是用来占有万物的；名字是为了在黑暗里找到彼此。』"}
+   ]
+ },
+ coast:{
+   name:"退字滩",desc:"这里的浪退去时，会带走岸上一部分语言。",
+   tiles:[
+   "################",
+   "#......~~~~....#",
+   "#.....~~~~~....#",
+   "#....~~~~......#",
+   "#..............#",
+   "#..:::.........#",
+   "#..:::.....~...#",
+   "#..........~...#",
+   "#.~~~......~...#",
+   "#.~~~..........#",
+   "################"],
+   entities:[
+     {id:"c_home",type:"portal",x:14,y:5,label:"返回墨港",to:"harbor",tx:2,ty:5,icon:"→"},
+     {id:"c_1",type:"monster",x:9,y:5,label:"迷途贝影",enemy:"shell"},
+     {id:"c_2",type:"monster",x:8,y:8,label:"盐墨水母",enemy:"jelly"},
+     {id:"c_boss",type:"boss",x:4,y:3,label:"剥字潮灵",enemy:"tide",fragment:"sea"},
+     {id:"c_chest",type:"chest",x:5,y:8,label:"旧船箱",gold:15,potions:1},
+     {id:"c_lore",type:"lore",x:11,y:3,label:"潮湿石碑",body:"石碑上留有一个字的轮廓。\n水往那个空洞里流，却怎么也填不满。"}
+   ]
+ },
+ forest:{
+   name:"折页林",desc:"叶脉像一行行尚未写完的句子。",
+   tiles:[
+   "################",
+   "#..T...,,,..T..#",
+   "#.T...,,,,..T..#",
+   "#.....,,,......#",
+   "#...T......T...#",
+   "#..::......::..#",
+   "#..::...T..::..#",
+   "#......T.......#",
+   "#.T............#",
+   "#..............#",
+   "################"],
+   entities:[
+     {id:"f_home",type:"portal",x:8,y:9,label:"返回墨港",to:"harbor",tx:8,ty:2,icon:"↓"},
+     {id:"f_1",type:"monster",x:11,y:6,label:"落页纸蛾",enemy:"moth"},
+     {id:"f_2",type:"monster",x:5,y:4,label:"括号藤",enemy:"vine"},
+     {id:"f_boss",type:"boss",x:8,y:2,label:"无页书鹿",enemy:"deer",fragment:"forest"},
+     {id:"f_chest",type:"chest",x:3,y:3,label:"树根匣",gold:19,potions:1},
+     {id:"f_lore",type:"lore",x:12,y:4,label:"树皮上的句子",body:"『树木不说出果实的名字，果实仍然会成熟。』\n句子的末尾，有一处很轻的擦痕。"}
+   ]
+ },
+ observatory:{
+   name:"眠星台",desc:"坠落的星星藏在旧天文钟里，夜夜梦见黎明。",
+   tiles:[
+   "################",
+   "#...^^.........#",
+   "#..^^.....^....#",
+   "#........^^....#",
+   "#....:::.......#",
+   "#....:::.......#",
+   "#.....:.....^..#",
+   "#.....:........#",
+   "#....^^........#",
+   "#..............#",
+   "################"],
+   entities:[
+     {id:"o_home",type:"portal",x:1,y:5,label:"返回墨港",to:"harbor",tx:13,ty:5,icon:"←"},
+     {id:"o_1",type:"monster",x:7,y:5,label:"昏星傀儡",enemy:"doll"},
+     {id:"o_2",type:"monster",x:11,y:7,label:"断弦回响",enemy:"chime"},
+     {id:"o_boss",type:"boss",x:12,y:3,label:"陨光司辰",enemy:"star",fragment:"star"},
+     {id:"o_chest",type:"chest",x:13,y:8,label:"观星者匣",gold:24,potions:2},
+     {id:"o_lore",type:"lore",x:6,y:2,label:"星历",body:"历法的最后一页被剪去了。\n余下的一行说：『不是所有空白都在等待被填满。』"}
+   ]
+ },
+ tower:{
+   name:"终稿之塔",desc:"世界的最后一页，正等着你写下一个句号。",
+   tiles:[
+   "################",
+   "#..^^......^^..#",
+   "#..^........^..#",
+   "#..............#",
+   "#....^^..^^....#",
+   "#..............#",
+   "#....^^..^^....#",
+   "#..............#",
+   "#..............#",
+   "#..............#",
+   "################"],
+   entities:[
+     {id:"t_home",type:"portal",x:8,y:9,label:"返回墨港",to:"harbor",tx:8,ty:8,icon:"↓"},
+     {id:"t_boss",type:"boss",x:8,y:3,label:"缄默的校订者",enemy:"editor",fragment:"final"},
+     {id:"t_lore",type:"lore",x:5,y:8,label:"最后一封信",body:"信的称呼是空白的，署名也是空白的。\n只有正文：『无论你怎么选择，请别忘记，你也是世界的一部分。』"}
+   ]
+ }
+};
+const FRAGMENTS = [
+ {id:"sea",name:"海的尾音",where:"退字滩",symbol:"◈",desc:"一切离去，也都在回来。"},
+ {id:"forest",name:"林的首字",where:"折页林",symbol:"❧",desc:"生长从不需要许可。"},
+ {id:"star",name:"星的重音",where:"眠星台",symbol:"✦",desc:"最远的光也是一种抵达。"}
+];
+const ENEMIES = {
+ shell:{name:"迷途贝影",icon:"🐚",hp:26,atk:7,def:1,xp:14,gold:10,pattern:["attack","attack","heavy"],intro:"它的贝壳上，刻着一个没有人认得的字。"},
+ jelly:{name:"盐墨水母",icon:"🪼",hp:29,atk:7,def:2,xp:16,gold:11,pattern:["siphon","attack","heavy"],intro:"半透明的触手像晕开的墨水。"},
+ tide:{name:"剥字潮灵",icon:"🌊",hp:52,atk:9,def:2,xp:36,gold:27,pattern:["attack","heavy","siphon","attack"],intro:"潮水凝成王冠，所有未曾说出口的话都在它体内翻涌。"},
+ moth:{name:"落页纸蛾",icon:"🦋",hp:30,atk:8,def:1,xp:17,gold:11,pattern:["attack","siphon","heavy"],intro:"它的翅膀上，写满了被人划去的愿望。"},
+ vine:{name:"括号藤",icon:"🌿",hp:32,atk:8,def:2,xp:18,gold:12,pattern:["attack","heavy","attack"],intro:"长满括号的枝条，想把你留在未完成的句子里。"},
+ deer:{name:"无页书鹿",icon:"🦌",hp:64,atk:11,def:3,xp:42,gold:30,pattern:["attack","siphon","heavy","attack"],intro:"它的角是一座被撕去书页的图书馆。"},
+ doll:{name:"昏星傀儡",icon:"🌘",hp:36,atk:10,def:2,xp:20,gold:13,pattern:["attack","heavy","attack"],intro:"旧星盘仍在转动，它却忘了自己为何醒来。"},
+ chime:{name:"断弦回响",icon:"🔔",hp:38,atk:10,def:2,xp:21,gold:14,pattern:["siphon","attack","heavy"],intro:"看不见的钟声凝成了可以触摸的敌意。"},
+ star:{name:"陨光司辰",icon:"🌠",hp:73,atk:12,def:3,xp:49,gold:38,pattern:["attack","heavy","attack","siphon"],intro:"它手中的时间砂正向天空倒流。"},
+ editor:{name:"缄默的校订者",icon:"⌛",hp:119,atk:15,def:4,xp:90,gold:65,pattern:["attack","heavy","siphon","attack","heavy"],intro:"它没有面孔，只有一支能删去万物存在的笔。"}
+};
+function freshState(){
+ return {v:1,zone:"harbor",pos:{x:8,y:6},lv:1,xp:0,maxhp:46,hp:46,maxmp:10,mp:10,
+ attack:9,defense:2,gold:18,potions:2,fragments:[],cleared:[],mercy:0,
+ upgrades:{attack:0,health:0},flags:{started:false,lanternGift:false,ending:null},
+ log:["你在墨港醒来。那张海图上，唯独没有你的名字。"]};
+}
+let state=freshState(), battle=null, mode="none", toastTimer=null, steps=0;
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function randint(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function neededXP(lv){ return 8+lv*12; }
+function addLog(text){ state.log.push(text); if(state.log.length>32) state.log.shift(); }
+function toast(text){ const e=el("toast"); e.textContent=text; e.classList.add("shown"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>e.classList.remove("shown"),2300); }
+function save(announce=false){
+ try{ localStorage.setItem(KEY,JSON.stringify(state)); if(announce) toast("旅途已写进这台设备。"); return true; }
+ catch(e){ if(announce) toast("浏览器阻止了本机存档。"); return false; }
+}
+function validate(s) {
+ if(!s||s.v!==1||!MAPS[s.zone]||!s.pos||!Number.isInteger(s.pos.x)||!Number.isInteger(s.pos.y)) return false;
+ if(s.pos.x<0||s.pos.x>=MW||s.pos.y<0||s.pos.y>=MH) return false;
+ if(!Number.isInteger(s.lv)||s.lv<1||s.lv>100) return false;
+ for(const k of ["hp","maxhp","mp","maxmp","attack","defense","gold","potions","xp"]){
+   if(!Number.isFinite(s[k])||s[k]<0||s[k]>1000000) return false;
+ }
+ if(s.maxhp<1||s.maxmp<1||s.hp>s.maxhp||s.mp>s.maxmp) return false;
+ if(!Array.isArray(s.fragments)||!Array.isArray(s.cleared)||!Array.isArray(s.log)) return false;
+ if(s.fragments.some(x=>!["sea","forest","star"].includes(x))) return false;
+ if(s.cleared.some(x=>typeof x!=="string")||!s.flags||!s.upgrades) return false;
+ if(!passable(s.zone,s.pos.x,s.pos.y)) return false;
+ if(s.fragments.length>3||new Set(s.fragments).size!==s.fragments.length) return false;
+ if(s.log.length>200||s.log.some(x=>typeof x!=="string"||x.length>1000)) return false;
+ if(!Number.isInteger(s.upgrades.attack)||s.upgrades.attack<0||s.upgrades.attack>3) return false;
+ if(!Number.isInteger(s.upgrades.health)||s.upgrades.health<0||s.upgrades.health>3) return false;
+ if(![null,"restore","free"].includes(s.flags.ending)||typeof s.flags.started!=="boolean") return false;
+ return true;
+}
+function load(announce=false) {
+ try {
+   const raw=localStorage.getItem(KEY);
+   if(!raw){ if(announce) toast("还没有旅途存档。"); return false; }
+   const stored=JSON.parse(raw);
+   if(!validate(stored)){ if(announce) toast("存档格式无效，未覆盖当前进度。"); return false; }
+   state=stored; battle=null; closeModal(); redrawUI();
+   if(announce) toast("已经翻回上一次的那一页。");
+   return true;
+ }catch(e){ if(announce) toast("存档无法读取，当前进度不变。"); return false; }
+}
+function formatLog(){
+ el("log").innerHTML=state.log.slice(-5).reverse().map(s=>`<p class="logline">${esc(s)}</p>`).join("");
+}
+function redrawUI(){
+ const place=MAPS[state.zone], count=state.fragments.length;
+ el("placeName").textContent=place.name;
+ el("placeDesc").textContent=place.desc;
+ el("chapterCounter").textContent=`拾回片语 ${count} / 3`;
+ el("questCount").textContent=`${count} / 3`;
+ el("levelLabel").textContent=`LV. ${state.lv}`;
+ const xneed=neededXP(state.lv);
+ el("stats").innerHTML=`
+  <div class="bar-line"><span>生命 / HP</span><strong>${state.hp} / ${state.maxhp}</strong></div>
+  <div class="track"><i class="hpbar" style="width:${100*state.hp/state.maxhp}%"></i></div>
+  <div class="bar-line"><span>回响 / MP</span><strong>${state.mp} / ${state.maxmp}</strong></div>
+  <div class="track"><i class="mpbar" style="width:${100*state.mp/state.maxmp}%"></i></div>
+  <div class="bar-line"><span>经验 / EXP</span><strong>${state.xp} / ${xneed}</strong></div>
+  <div class="track"><i class="xpbar" style="width:${100*state.xp/xneed}%"></i></div>
+  <div class="stats-grid">
+   <div class="statbox"><small>等级</small><b>${state.lv}</b></div>
+   <div class="statbox"><small>刻笔攻击</small><b>${state.attack}</b></div>
+   <div class="statbox"><small>墨衣防御</small><b>${state.defense}</b></div>
+  </div>`;
+ el("quests").innerHTML=FRAGMENTS.map(f=>{
+   const got=state.fragments.includes(f.id);
+   return `<div class="quest ${got?"done":""}"><div class="quest-glyph">${got?"✓":f.symbol}</div>
+     <div><div class="quest-name">${f.name}</div><div class="quest-desc">${got?f.desc:"线索 · "+f.where}</div></div></div>`;
+ }).join("");
+ el("inventory").innerHTML=`
+  <div class="item"><em>◈</em><span>贝币<b>${state.gold}</b></span></div>
+  <div class="item"><em>⚗</em><span>潮汐药瓶<b>${state.potions} 瓶</b></span></div>
+  <div class="item"><em>✒</em><span>刻笔工艺<b>+${state.upgrades.attack*2} 攻击</b></span></div>
+  <div class="item"><em>♧</em><span>灯芯加护<b>+${state.upgrades.health*11} 生命</b></span></div>`;
+ formatLog();
+ el("mapTip").textContent=count===3 && state.zone==="harbor" ? "✦ 终稿之塔已开启" : "✦ 光点可以调查";
+}
+function closeModal(){ overlay.classList.remove("visible"); mode="none"; modal.replaceChildren(); }
+function showModal({kicker="来自海的回声",title,body,options=[]}){
+ battle=null; mode="dialog"; overlay.classList.add("visible");
+ modal.innerHTML=`<div class="modal-kicker">${esc(kicker)}</div><h2>${esc(title)}</h2>
+    <p>${esc(body)}</p><div class="modal-options" id="modalOptions"></div>`;
+ for(const op of options){
+   const btn=document.createElement("button");
+   btn.type="button"; btn.textContent=op.label; btn.className=op.kind||"";
+   btn.disabled=!!op.disabled;
+   btn.addEventListener("click",()=>{closeModal(); if(op.onPick) op.onPick();});
+   el("modalOptions").append(btn);
+ }
+}
+function info(title,body){showModal({title,body,options:[{label:"继续旅程 →",kind:"primary"}]});}
+function onboarding(){
+ state.flags.started=true; save(); redrawUI();
+ showModal({kicker:"第一章 · 退潮时分",title:"你失去了自己的名字",
+ body:"清晨，海把你的名字从所有纸张上洗掉了。只有港口的一盏灯，还记得你曾经来过。\n\n守灯人说，三个被夺走的音节散落在【退字滩】【折页林】【眠星台】。找回它们，才能进入南边的【终稿之塔】。\n\n但没人知道：世界恢复名字以后，会不会又变回原来的样子。",
+ options:[
+ {label:"我想亲自走进这个故事",kind:"primary",onPick:()=>toast("试着去和附近的阿烛交谈。")},
+ {label:"先看看怎么玩",onPick:()=>showHelp()}
+ ]});
+}
+function showHelp(){
+ showModal({kicker:"旅行指南",title:"这是一款真正可以通关的 RPG",
+ body:"【移动】键盘 WASD / 方向键，或地图下方的方向盘。\n【调查】靠近发光人物或图标，按 E / 空格 / 交互。触碰怪物会进入回合制战斗。\n【战斗】刻笔攻击不耗回响；回声术耗 3 MP；缝合术耗 4 MP；防御回合能恢复 2 MP；药瓶恢复生命。留心敌人的下一次行动。\n【成长】战斗获得经验、贝币；在墨港找鲛墨商升级，找守灯婆婆免费恢复生命和回响。\n【存档】自动保存在当前浏览器，也可手动保存、读取或重新开始。\n【目标】收集三个音节、进入终稿之塔、做出最后的选择。",
+ options:[{label:"明白了，继续冒险",kind:"primary"}]});
+}
+function passable(zone,x,y){
+ if(x<0||y<0||x>=MW||y>=MH) return false;
+ return !["#","T","~","^"].includes(MAPS[zone].tiles[y][x]);
+}
+function visibleEntities(zone=state.zone){
+ return MAPS[zone].entities.filter(e=>!["monster","boss","chest"].includes(e.type)||!state.cleared.includes(e.id));
+}
+function entityAt(x,y){return visibleEntities().find(e=>e.x===x && e.y===y);}
+function warp(e){
+ if(e.locked && state.fragments.length<3){
+   toast(`终稿之塔需要三个音节。你还差 ${3-state.fragments.length} 个。`);return;
+ }
+ state.zone=e.to; state.pos={x:e.tx,y:e.ty};
+ addLog(`你走进了${MAPS[e.to].name}。`);
+ redrawUI();save();toast(`${MAPS[e.to].name} · ${MAPS[e.to].desc}`);
+}
+function move(dx,dy){
+ if(mode!=="none")return;
+ const x=state.pos.x+dx,y=state.pos.y+dy;
+ if(!passable(state.zone,x,y)){ toast("那里没有可以走的路。");return; }
+ const e=entityAt(x,y);
+ if(e && e.type==="portal"){warp(e);return;}
+ if(e && ["monster","boss"].includes(e.type)){startBattle(e);return;}
+ state.pos={x,y};steps++;
+ if(e && ["chest","npc","shop","healer","lore"].includes(e.type)){
+   interactEntity(e);
+ } else {
+   if(steps%22===0) addLog("远处传来海浪翻页一般的声音。");
+   redrawUI();
+ }
+ save();
+}
+function interact(){
+ if(mode!=="none")return;
+ const choices=visibleEntities().map(e=>({e,d:Math.abs(state.pos.x-e.x)+Math.abs(state.pos.y-e.y)}))
+   .filter(o=>o.d<=1).sort((a,b)=>a.d-b.d || priority(a.e)-priority(b.e));
+ if(!choices.length){toast("这里很安静。去靠近发光的名字。");return;}
+ interactEntity(choices[0].e);
+}
+function priority(e){return {npc:0,shop:1,healer:2,monster:3,boss:3,chest:4,lore:5,portal:6}[e.type]||9;}
+function interactEntity(e){
+ switch(e.type){
+ case "portal":warp(e);break;
+ case "monster":case "boss":startBattle(e);break;
+ case "chest":
+   state.cleared.push(e.id);state.gold+=e.gold;state.potions+=e.potions;
+   addLog(`你在${e.label}里找到了 ${e.gold} 贝币和 ${e.potions} 瓶潮汐药。`);
+   redrawUI();save();
+   info("一个被遗忘的小礼物",`你打开了${e.label}。\n\n+ ${e.gold} 贝币\n+ ${e.potions} 瓶潮汐药\n\n箱底还有一句淡淡的字：『有人曾希望你能走到这里。』`);
+   break;
+ case "lore":info(e.label,e.body);break;
+ case "npc":talkToAzhu();break;
+ case "healer":
+   state.hp=state.maxhp;state.mp=state.maxmp;
+   addLog("守灯婆婆把灯递给你，所有伤口都暂时忘了疼痛。");
+   redrawUI();save();
+   info("守灯婆婆", "『灯不问你从哪里来。』\n\n婆婆将手中的一束暖光放进你的掌心。\n生命与回响已全部恢复。");
+   break;
+ case "shop":showShop();break;
+ }
+}
+function talkToAzhu(){
+ if(!state.flags.lanternGift){
+   state.flags.lanternGift=true;state.potions+=1;addLog("阿烛送给你一瓶潮汐药。");redrawUI();save();
+   showModal({kicker:"墨港 · 老灯塔",title:"守灯人阿烛",body:"『你不记得自己的名字了？没关系。我会记住你的脚步声。』\n\n『你要先找回三个音节。海边的潮灵、林间的书鹿、星台的司辰，都守着各自的秘密。』\n\n他偷偷往你的背包里塞了一瓶潮汐药。",
+     options:[{label:"谢谢你，我会回来的",kind:"primary"}]});
+ }else if(state.fragments.length===3){
+   info("阿烛", "『三个音节都回来了啊。』\n\n『终稿之塔在港口正南边。塔里住着缄默的校订者。你不一定要按照它写好的结局走。』");
+ }else{
+   info("阿烛",`『已经找回 ${state.fragments.length} 个音节了。』\n\n『不知道该往哪儿走的话，就看看发光的路标。记得常回港口歇歇。』`);
+ }
+}
+function showShop(){
+ const aCost=26+state.upgrades.attack*15;
+ const hCost=23+state.upgrades.health*15;
+ showModal({kicker:`鲛墨商 · 你有 ${state.gold} 贝币`,title:"用一束光交换一条更长的路",
+ body:"『不能用贝币买回名字，但可以买一支好刻笔。』\n\n这是永久升级，不需要联网。",
+ options:[
+ {label:`✒ 强化刻笔：攻击 +2（${aCost} 贝币；最多 3 次）`,disabled:state.gold<aCost||state.upgrades.attack>=3,
+  onPick:()=>buy("attack",aCost)},
+ {label:`♧ 增添灯芯：最大生命 +11（${hCost} 贝币；最多 3 次）`,disabled:state.gold<hCost||state.upgrades.health>=3,
+  onPick:()=>buy("health",hCost)},
+ {label:"⚗ 潮汐药 ×1（12 贝币）",disabled:state.gold<12,onPick:()=>buy("potion",12)},
+ {label:"离开商店",kind:"secondary"}]});
+}
+function buy(item,cost){
+ if(state.gold<cost){toast("贝币不够。");showShop();return;}
+ if(item==="attack"&&state.upgrades.attack>=3 || item==="health"&&state.upgrades.health>=3){showShop();return;}
+ state.gold-=cost;
+ if(item==="attack"){state.attack+=2;state.upgrades.attack++;}
+ if(item==="health"){state.maxhp+=11;state.hp+=11;state.upgrades.health++;}
+ if(item==="potion")state.potions++;
+ addLog(item==="potion"?"购买了一瓶潮汐药。":"刻笔匠给你的旅途留下了永久加护。");
+ redrawUI();save();toast("交易完成。");showShop();
+}
+function beginEnding(){
+ showModal({kicker:"终章 · 世界的空白",title:"你拿到了修改世界的笔",
+ body:"缄默的校订者倒下了。最后一页摊开，所有被海带走的名字都在等待。\n\n你可以把它们逐字写回去，让一切恢复原样。\n\n也可以保留一部分空白，让世界自行选择新的名字。\n\n两条路都不会替你做决定。",
+ options:[
+ {label:"一｜写回所有旧名字，让每个人找到归途",kind:"primary",onPick:()=>finish("restore")},
+ {label:"二｜留下空白，让万物重新为自己命名",onPick:()=>finish("free")} ]});
+}
+function finish(path){
+ state.flags.ending=path;addLog(path==="restore"?"你让归途重新有了名字。":"你允许每种生命自己命名。");redrawUI();save();
+ const gentle=state.mercy>=2;
+ const title=path==="restore"?"结局：灯火为你留名":"结局：无人拥有黎明";
+ const body=path==="restore"?
+  `你用刻笔把旧名字写回世界。海岸重新有了方向，林木记起彼此，星星回到夜空。${gentle?"那些你放过的守护者也回来了，替远行的人守着路。": "那些曾守住音节的生命，成为地图边缘的古老注脚。"}\n\n最后，阿烛在灯塔的门上写下一个名字。\n\n不是你遗失的旧名字，而是你旅途中自己成为的名字：『归来者』。\n\n【通关 · 旧名的黎明】`:
+  `你留下了地图上的空白。刚开始，人们惊慌地发现自己没有既定的称呼。后来，一个小女孩先给风起了名字；紧接着，雨、树、潮声都拥有了新的叫法。${gentle?"你宽恕过的守护者为他们讲述旧世界的故事，谁也不再强迫谁记住。": "石碑和残页散落各处，人们从它们学会：遗忘与创造可以同时存在。"}\n\n阿烛没有问你的名字。他只是笑着说：『我知道是你。』\n\n【通关 · 自由的黎明】`;
+ showModal({kicker:"旅程完成 · 你改变了这片海",title,body,options:[
+ {label:"回到墨港，继续看看这个世界",kind:"primary",onPick:()=>{state.zone="harbor";state.pos={x:8,y:6};redrawUI();save();toast("终章之后，世界仍然可以被探索。");}},
+ {label:"从第一章再走一次",onPick:()=>confirmReset()}
+ ]});
+}
+function afterBoss(e){
+ if(e.fragment==="final"){beginEnding();return;}
+ if(!state.fragments.includes(e.fragment))state.fragments.push(e.fragment);
+ const f=FRAGMENTS.find(x=>x.id===e.fragment);
+ addLog(`你找回了${f.name}。`);
+ redrawUI();save();
+ const lines={
+ sea:"潮灵终于卸下沉重的王冠。它并不是偷走词语的怪物——它一直在替大海保管人们不敢说的再见。",
+ forest:"书鹿低下头，空白的鹿角里长出一片新叶。它害怕有人重新为森林规定唯一的意义。",
+ star:"司辰看见天上的第一颗晨星。它忘记了如何放下职责，因而把黎明锁进了钟表。"
+ };
+ showModal({kicker:`拾回音节 · ${state.fragments.length} / 3`,title:f.name,body:`${lines[e.fragment]}\n\n你握住了这枚温热的音节。现在，你可以决定守护者的余生。`,
+ options:[
+ {label:"将它的名字还给它（仁慈 +1）",kind:"primary",onPick:()=>{
+    state.mercy++;state.maxmp+=2;state.mp=Math.min(state.maxmp,state.mp+2);
+    addLog("你还给守护者自由，回响上限 +2。");redrawUI();save();
+    toast("你的选择留在了世界里 · 回响上限 +2");
+ }},
+ {label:"把它的力量写进刻笔（攻击 +1）",onPick:()=>{
+    state.attack+=1;addLog("你借走了古老力量，攻击 +1。");redrawUI();save();toast("刻笔变得更锋利了 · 攻击 +1");
+ }}]});
+}
+function gainXP(value){
+ state.xp+=value;
+ while(state.xp>=neededXP(state.lv)){
+   state.xp-=neededXP(state.lv);state.lv++;
+   state.maxhp+=9;state.maxmp+=2;state.attack+=2;if(state.lv%2===0)state.defense++;
+   state.hp=state.maxhp;state.mp=state.maxmp;
+   addLog(`你升到了 ${state.lv} 级！生命与回响恢复。`);
+ }
+}
+function startBattle(e){
+ if(mode!=="none")return;
+ const original=ENEMIES[e.enemy];
+ battle={entity:e,enemy:{...original, hp:original.hp,maxhp:original.hp},
+  round:0,guard:false,lines:[original.intro]};
+ mode="battle"; overlay.classList.add("visible");renderBattle();
+}
+function intent(enemy,round){ return enemy.pattern[round%enemy.pattern.length]; }
+function intentLabel(p){ return p==="heavy"?"重击将至！下次伤害会增加。":p==="siphon"?"汲取回响：将损失回响与生命。":"普通攻击：它正在寻找破绽。"; }
+function battleLine(s){battle.lines.push(s);if(battle.lines.length>5)battle.lines.shift();}
+function renderBattle(){
+ if(!battle)return;
+ const e=battle.enemy,plan=intent(e,battle.round);
+ const ratio=clamp(100*e.hp/e.maxhp,0,100);
+ modal.innerHTML=`<div class="modal-kicker">战斗 · ${esc(MAPS[state.zone].name)} · 第 ${battle.round+1} 回合</div>
+ <h2>一段拒绝被改写的故事</h2>
+ <div class="battle-enemy"><div class="enemy-icon">${e.icon}</div><div class="battle-enemy-info">
+ <b>${esc(e.name)}</b><small>生命 ${e.hp} / ${e.maxhp}</small>
+ <div class="track"><i class="hpbar" style="width:${ratio}%"></i></div></div></div>
+ <div class="intent">⚑ 敌人预告：${intentLabel(plan)}</div>
+ <div class="battle-player-strip"><span>你 · LV.${state.lv} | <strong>HP ${state.hp}/${state.maxhp}</strong></span>
+ <span>回响 <strong>${state.mp}/${state.maxmp}</strong> · 药瓶 ${state.potions}</span></div>
+ <div class="battle-log" aria-live="polite">${battle.lines.slice(-3).map(t=>`<span>· ${esc(t)}</span>`).join("")}</div>
+ <div class="battle-actions" id="battleActions"></div>
+ <p style="font-size:11px;margin:13px 0 0;color:#90b0aa">提示：防御会减伤并恢复 2 MP。按数字键 1—5 也可以行动。</p>`;
+ const actions=[
+ {a:"attack",n:"1 · 刻笔斩击",d:"无消耗",disabled:false},
+ {a:"echo",n:"2 · 回声术",d:"3 MP · 高伤害",disabled:state.mp<3},
+ {a:"mend",n:"3 · 缝合术",d:"4 MP · 治疗",disabled:state.mp<4||state.hp===state.maxhp},
+ {a:"guard",n:"4 · 守住名字",d:"减伤 +2 MP",disabled:false},
+ {a:"potion",n:"5 · 潮汐药",d:"恢复生命",disabled:state.potions<1||state.hp===state.maxhp}
+ ];
+ for(const ac of actions){
+  const btn=document.createElement("button");btn.type="button";btn.className=ac.a==="echo"?"main-spell":"";
+  btn.disabled=ac.disabled;btn.innerHTML=`<span>${esc(ac.n)}</span><small>${esc(ac.d)}</small>`;
+  btn.addEventListener("click",()=>combatAction(ac.a));el("battleActions").append(btn);
+ }
+}
+function combatAction(action){
+ if(mode!=="battle"||!battle)return;
+ const b=battle,e=b.enemy;
+ if(action==="echo"&&state.mp<3||action==="mend"&&state.mp<4||action==="potion"&&(state.potions<1||state.hp===state.maxhp)
+ ||action==="mend"&&state.hp===state.maxhp)return;
+ b.guard=false;
+ if(action==="attack"){
+   const d=Math.max(1,state.attack+randint(1,4)-e.def);
+   e.hp=Math.max(0,e.hp-d);battleLine(`你挥出刻笔，划开 ${d} 点伤害。`);
+ }else if(action==="echo"){
+   state.mp-=3;const d=Math.max(2,11+state.lv*3+randint(0,3)-Math.floor(e.def/2));
+   e.hp=Math.max(0,e.hp-d);battleLine(`你说出一段回声，造成 ${d} 点伤害。`);
+ }else if(action==="mend"){
+   state.mp-=4;const hp=Math.min(state.maxhp-state.hp,16+state.lv*4);state.hp+=hp;
+   battleLine(`你将破碎的文字缝合，恢复 ${hp} 生命。`);
+ }else if(action==="guard"){
+   b.guard=true;state.mp=Math.min(state.maxmp,state.mp+2);battleLine("你护住自己的名字，准备承受下一击。");
+ }else if(action==="potion"){
+   state.potions--;const hp=Math.min(state.maxhp-state.hp,27+state.lv*2);state.hp+=hp;
+   battleLine(`潮汐药温暖了你的掌心，恢复 ${hp} 生命。`);
+ }
+ if(e.hp<=0){victory();return;}
+ enemyTurn();
+ if(mode==="battle"){redrawUI();renderBattle();save();}
+}
+function enemyTurn(){
+ if(!battle)return;
+ const b=battle,e=b.enemy,move=intent(e,b.round);
+ let damage=Math.max(1,e.atk+(move==="heavy"?6:0)+randint(-1,2)-state.defense);
+ if(b.guard)damage=Math.max(1,Math.ceil(damage*.30));
+ state.hp=Math.max(0,state.hp-damage);
+ if(move==="siphon"){
+   const drained=Math.min(state.mp,2);state.mp-=drained;
+   battleLine(`${e.name}汲走 ${drained} 点回响，造成 ${damage} 点伤害。`);
+ }else if(move==="heavy"){
+   battleLine(`${e.name}发动重击！你受到 ${damage} 点伤害${b.guard?"（已防御）":""}。`);
+ }else battleLine(`${e.name}袭来，你受到 ${damage} 点伤害${b.guard?"（已防御）":""}。`);
+ b.round++;b.guard=false;
+ if(state.hp<=0)defeat();
+}
+function victory(){
+ const e=battle.enemy,ent=battle.entity;
+ if(!state.cleared.includes(ent.id))state.cleared.push(ent.id);
+ state.gold+=e.gold;gainXP(e.xp);
+ addLog(`你战胜了${e.name}，获得 ${e.xp} 经验与 ${e.gold} 贝币。`);
+ battle=null;closeModal();redrawUI();save();
+ if(ent.type==="boss")afterBoss(ent);
+ else showModal({kicker:"战斗胜利",title:"你赢得了一小段寂静",
+ body:`${e.name}消散成温柔的墨点。\n\n+ ${e.xp} 经验\n+ ${e.gold} 贝币\n\n海图上原本模糊的路，现在清晰了一些。`,
+ options:[{label:"继续探索",kind:"primary"}]});
+}
+function defeat(){
+ const lost=Math.min(12,state.gold);state.gold-=lost;
+ const name=battle.enemy.name;battle=null;closeModal();
+ state.zone="harbor";state.pos={x:8,y:6};
+ state.hp=Math.max(1,Math.ceil(state.maxhp*.65));
+ state.mp=Math.ceil(state.maxmp*.55);
+ addLog(`你被${name}击退，失去了 ${lost} 贝币，但没有失去旅程。`);
+ redrawUI();save();
+ showModal({kicker:"并非故事的终点",title:"潮水把你送回了墨港",
+ body:`你没能打败${name}。\n\n阿烛把你从海边扶起来，替你拾回散落的笔。\n损失 ${lost} 贝币，生命和回响已部分恢复。敌人仍在那里，等你下次前来。\n\n可以去找守灯婆婆免费恢复，再到商人那里强化自己。`,
+ options:[{label:"我还会回去的",kind:"primary"}]});
+}
+function confirmReset(){
+ showModal({kicker:"翻开新的一页",title:"要重写整个旅程吗？",
+ body:"这会清除当前进度与结局，从墨港的第一天重新开始。此操作不能撤销。",
+ options:[{label:"保留当前旅程",kind:"primary"},{label:"确认：从头开始",onPick:()=>{
+ state=freshState();state.flags.started=true;state.zone="harbor";battle=null;redrawUI();save();onboarding();
+ }}]});
+}
+// Artwork: 48px painterly grid tiles, gentle sunlight, animated sea, layered silhouettes.
+function rr(x,y,w,h,r){
+ ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+ ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+ ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+ ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function oval(x,y,rx,ry,color,rotation=0){
+ ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function rnd(x,y,s=0){ let a=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453; return a-Math.floor(a); }
+function tree(cx,cy,p,t){
+ oval(cx,cy+17,16,5,"#304d4750");
+ ctx.fillStyle="#826f58";rr(cx-4,cy-1,8,21,2);ctx.fill();
+ oval(cx-7,cy-7,13,15,p.ink);
+ oval(cx+7,cy-12,15,17,p.leaf);
+ oval(cx-4,cy-20,13,13,p.leaf);
+ oval(cx+1,cy-24,9,5,"#a5c49c");
+ ctx.strokeStyle="#c5d0a9";ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(cx-9,cy-10);ctx.quadraticCurveTo(cx-6,cy-13,cx-2,cy-12);ctx.stroke();
+}
+function rocks(cx,cy,p){
+ oval(cx,cy+14,19,5,"#32485040");
+ ctx.fillStyle=p.rock;ctx.beginPath();ctx.moveTo(cx-19,cy+12);ctx.lineTo(cx-10,cy-8);
+ ctx.lineTo(cx+1,cy-16);ctx.lineTo(cx+14,cy-3);ctx.lineTo(cx+20,cy+11);ctx.closePath();ctx.fill();
+ ctx.fillStyle=p.pale;ctx.beginPath();ctx.moveTo(cx-10,cy-8);ctx.lineTo(cx+1,cy-16);ctx.lineTo(cx+2,cy+5);ctx.lineTo(cx-9,cy+11);ctx.closePath();ctx.fill();
+ ctx.strokeStyle=p.ink;ctx.globalAlpha=.34;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(cx+2,cy+5);ctx.lineTo(cx+8,cy+13);ctx.stroke();ctx.globalAlpha=1;
+}
+function paintGround(p,t){
+ ctx.fillStyle=p.sand;ctx.fillRect(0,0,768,528);
+ for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+   const tile=MAPS[state.zone].tiles[y][x],px=x*TS,py=y*TS,n=rnd(x,y);
+   ctx.fillStyle=(x+y)%2===0?p.sand:p.pale;ctx.globalAlpha=.19;ctx.fillRect(px,py,TS,TS);ctx.globalAlpha=1;
+   if(tile===":"){
+      ctx.fillStyle=p.path;ctx.globalAlpha=.70;rr(px+1,py+1,TS-2,TS-2,8);ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle="#ffffff45";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+7,py+10);ctx.lineTo(px+17,py+9);ctx.stroke();
+   } else if(tile===","){
+      ctx.fillStyle=p.leaf;ctx.globalAlpha=.13+.09*n;ctx.fillRect(px,py,TS,TS);ctx.globalAlpha=1;
+      for(let k=0;k<3;k++){const gx=px+8+13*k,gy=py+11+19*rnd(x,y,k);
+        ctx.strokeStyle=p.leaf;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(gx,gy+7);ctx.lineTo(gx-3,gy);ctx.moveTo(gx,gy+7);ctx.lineTo(gx+4,gy+1);ctx.stroke();}
+   }else if(tile==="~"){
+      ctx.fillStyle=p.sea;ctx.fillRect(px,py,TS,TS);
+      ctx.fillStyle="#b6d7c7";ctx.globalAlpha=.14;ctx.fillRect(px,py,TS,5);ctx.globalAlpha=1;
+      for(let k=0;k<2;k++){
+        const phase=(t*7+(k*16)+x*5)%40;ctx.strokeStyle="#e7efe0";ctx.globalAlpha=.30;ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(px+4+phase*.22,py+14+k*20);ctx.quadraticCurveTo(px+23,py+9+k*20,px+41,py+13+k*20);ctx.stroke();ctx.globalAlpha=1;
+      }
+   }else if(tile==="#"){
+      ctx.fillStyle=p.ink;ctx.fillRect(px,py,TS,TS);
+      ctx.fillStyle="#eff0d2";ctx.globalAlpha=.10;ctx.fillRect(px+2,py+2,TS-4,3);ctx.globalAlpha=1;
+      ctx.strokeStyle="#d2dfc930";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+17,py+3);ctx.lineTo(px+15,py+20);ctx.lineTo(px+24,py+33);ctx.stroke();
+      if(rnd(x,y,7)>.5)oval(px+18,py+36,6,2,"#e6d6af25");
+   } else {
+      ctx.fillStyle=p.ink;ctx.globalAlpha=.15;
+      oval(px+7+n*24,py+12+rnd(x,y,3)*27,1.4,1.1,p.ink);
+      oval(px+28,py+34,1,1,p.ink);ctx.globalAlpha=1;
+      if(rnd(x,y,9)>.84 && state.zone!=="tower"){
+         ctx.strokeStyle=p.leaf;ctx.globalAlpha=.42;ctx.lineWidth=1;
+         ctx.beginPath();ctx.moveTo(px+14,py+39);ctx.lineTo(px+11,py+33);ctx.moveTo(px+14,py+39);ctx.lineTo(px+17,py+34);ctx.stroke();ctx.globalAlpha=1;
+      }
+   }
+   if(tile==="T")tree(px+24,py+25,p,t);
+   if(tile==="^")rocks(px+24,py+23,p);
+ }
+}
+function drawMapAtmosphere(t){
+ let grad=ctx.createLinearGradient(0,0,768,528);
+ grad.addColorStop(0,"#fff5d128");grad.addColorStop(.46,"#fff6dc08");grad.addColorStop(1,"#1d3b490a");
+ ctx.fillStyle=grad;ctx.fillRect(0,0,768,528);
+ // soft vignette without obscuring map details
+ const v=ctx.createRadialGradient(350,210,120,384,264,560);
+ v.addColorStop(0,"#fff4e000");v.addColorStop(1,"#1d41401c");
+ ctx.fillStyle=v;ctx.fillRect(0,0,768,528);
+}
+function smallLabel(x,y,label,accent="#f4e8c8"){
+ ctx.font='bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+ ctx.textAlign="center";ctx.textBaseline="middle";
+ const width=Math.min(130,ctx.measureText(label).width+13);
+ rr(x-width/2,y,width,17,6);ctx.fillStyle="#163a40d9";ctx.fill();
+ ctx.strokeStyle="#faf1d45c";ctx.lineWidth=.8;ctx.stroke();
+ ctx.fillStyle=accent;ctx.fillText(label,x,y+8.5);
+}
+function drawCharacter(x,y,color,t,npc=false){
+ let bob=reduceMotion?0:Math.sin(t*2+x*.2)*1.1;
+ oval(x,y+17,14,4,"#142f3c50");
+ ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x-11,y+9+bob);ctx.quadraticCurveTo(x-10,y-8+bob,x,y-12+bob);
+ ctx.quadraticCurveTo(x+10,y-8+bob,x+11,y+9+bob);ctx.quadraticCurveTo(x,y+19+bob,x-11,y+9+bob);ctx.fill();
+ oval(x,y-9+bob,10,11,npc?"#f1c6a2":"#e8be92");
+ ctx.fillStyle=npc?"#283f47":"#28494c";ctx.beginPath();ctx.arc(x,y-12+bob,10,Math.PI*1.05,Math.PI*1.95);ctx.lineTo(x+9,y-12+bob);ctx.fill();
+ oval(x-3,y-9+bob,1,1.3,"#34444b");oval(x+4,y-9+bob,1,1.3,"#34444b");
+}
+function drawMonster(x,y,e,t,boss=false){
+ let bob=reduceMotion?0:Math.sin(t*2.7+x/12)*2.6;
+ oval(x,y+16,19,5,"#1b353943");
+ ctx.save();ctx.translate(x,y+bob);
+ const aura=boss?20:15;
+ oval(0,0,aura+4,aura+1,boss?"#f3c57a36":"#4f7a7c2c");
+ ctx.fillStyle=boss?"#796a84":"#627f83";
+ ctx.beginPath();ctx.moveTo(-15,8);ctx.quadraticCurveTo(-19,-15,-2,-16);ctx.quadraticCurveTo(16,-22,16,5);ctx.quadraticCurveTo(10,18,-14,10);ctx.fill();
+ ctx.strokeStyle=boss?"#eec789":"#b6d9cd";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-12,-6);ctx.quadraticCurveTo(-19,-19,-10,-20);ctx.moveTo(12,-6);ctx.quadraticCurveTo(20,-19,9,-20);ctx.stroke();
+ oval(-5,-1,2.1,2.5,"#f9e7c9");oval(6,-1,2.1,2.5,"#f9e7c9");
+ if(boss){ctx.strokeStyle="#f7df96";ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(0,-5,23,.25,2.8);ctx.stroke();}
+ ctx.restore();
+}
+function drawChest(x,y){
+ oval(x,y+15,16,5,"#143e3d35");
+ ctx.fillStyle="#a97855";rr(x-15,y-6,30,23,5);ctx.fill();
+ ctx.fillStyle="#d5aa6e";rr(x-15,y-9,30,12,5);ctx.fill();
+ ctx.fillStyle="#674d45";ctx.fillRect(x-15,y+1,30,3);
+ ctx.fillStyle="#f1d38b";ctx.fillRect(x-2,y-5,5,15);oval(x+.5,y+6,2,2,"#73513a");
+}
+function drawPortal(x,y,e,t){
+ const locked=e.locked&&state.fragments.length<3;
+ const pulse=reduceMotion?0:Math.sin(t*2.6+x)*2;
+ oval(x,y+16,17,5,"#263f4835");
+ ctx.strokeStyle=locked?"#9a8b88":"#f5df9a";ctx.lineWidth=2.2;
+ rr(x-14,y-17,28,34,8);ctx.stroke();
+ ctx.fillStyle=locked?"#5b5d5d":"#627e79";ctx.globalAlpha=.65;rr(x-10,y-12,20,25,6);ctx.fill();ctx.globalAlpha=1;
+ ctx.font="bold 19px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";
+ ctx.fillStyle=locked?"#b5a59c":"#fff0af";ctx.fillText(locked?"✕":e.icon,x,y-1+pulse*.3);
+ smallLabel(x,y+20,e.label,locked?"#e3bab6":"#ffedbe");
+}
+function drawLore(x,y,t){
+ oval(x,y+13,12,4,"#2544483b");
+ ctx.fillStyle="#faf1c9";rr(x-13,y-13,26,25,3);ctx.fill();
+ ctx.fillStyle="#b8a57e";ctx.fillRect(x-8,y-6,15,2);ctx.fillRect(x-8,y+1,11,2);
+ ctx.fillStyle="#e09b73";oval(x+8,y-11,5,5,"#e09b73");
+}
+function drawPlayer(t){
+ const x=state.pos.x*TS+24,y=state.pos.y*TS+24;
+ let bob=reduceMotion?0:Math.sin(t*4)*1.6;
+ oval(x,y+18,15,5,"#26363560");
+ ctx.save();ctx.translate(x,y+bob);
+ // trailing amber scarf, ink-blue coat, boots, and a small brass lantern
+ ctx.fillStyle="#374e59";ctx.beginPath();ctx.moveTo(-9,-1);ctx.lineTo(-15,12);ctx.quadraticCurveTo(0,22,14,12);ctx.lineTo(9,-2);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#476974";ctx.beginPath();ctx.moveTo(-9,-7);ctx.lineTo(9,-7);ctx.lineTo(12,14);ctx.lineTo(-12,14);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#e6ac69";ctx.beginPath();ctx.moveTo(3,-5);ctx.quadraticCurveTo(13,-4,17,1);
+ ctx.quadraticCurveTo(22,1+Math.sin(t*2)*2,22,8);ctx.lineTo(16,5);ctx.quadraticCurveTo(12,5,0,-1);ctx.fill();
+ oval(0,-9,10,11,"#f2c79e");
+ ctx.fillStyle="#28474e";ctx.beginPath();ctx.arc(0,-12,11,Math.PI*.98,Math.PI*2.04);ctx.lineTo(9,-9);ctx.quadraticCurveTo(1,-17,-10,-8);ctx.fill();
+ oval(-3,-7,1.2,1.4,"#354047");oval(4,-7,1.2,1.4,"#354047");
+ ctx.fillStyle="#e0b374";rr(-8,12,6,6,2);ctx.fill();rr(4,12,6,6,2);ctx.fill();
+ ctx.save();ctx.translate(-11,3);ctx.rotate(-.27);ctx.fillStyle="#d4b682";rr(-4,-5,7,12,2);ctx.fill();
+ ctx.strokeStyle="#f8e5a4";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(1,-5);ctx.lineTo(7,-21);ctx.stroke();ctx.restore();
+ // lantern on the near side
+ ctx.fillStyle="#f4d991";rr(12,1,6,8,2);ctx.fill();ctx.strokeStyle="#4b6666";ctx.lineWidth=1;ctx.stroke();
+ ctx.restore();
+}
+function render(t0){
+ const t=reduceMotion?0:t0/1000,p=PALETTES[state.zone];
+ ctx.clearRect(0,0,768,528);
+ paintGround(p,t);
+ drawMapAtmosphere(t);
+ for(const e of visibleEntities()){
+  const x=e.x*TS+24,y=e.y*TS+24;
+  if(e.type==="portal")drawPortal(x,y,e,t);
+  else if(e.type==="monster"||e.type==="boss"){
+   drawMonster(x,y,e,t,e.type==="boss");
+   smallLabel(x,y+20,e.label,e.type==="boss"?"#ffe1a6":"#e5f4df");
+  }
+  else if(e.type==="chest"){drawChest(x,y);smallLabel(x,y+20,e.label);}
+  else if(e.type==="lore"){drawLore(x,y,t);smallLabel(x,y+20,e.label);}
+  else {drawCharacter(x,y,e.hue||"#bbaa92",t,true);smallLabel(x,y+21,e.label);}
+ }
+ drawPlayer(t);
+ requestAnimationFrame(render);
+}
+function inputKeys(e){
+ const key=e.key.toLowerCase();
+ if(mode==="battle"){
+  if(["1","2","3","4","5"].includes(key)){e.preventDefault();combatAction({1:"attack",2:"echo",3:"mend",4:"guard",5:"potion"}[key]);}
+  return;
+ }
+ if(mode==="dialog")return;
+ const dirs={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]};
+ if(dirs[key]){e.preventDefault();move(...dirs[key]);}
+ else if(key==="e"||key===" "||key==="enter"){e.preventDefault();interact();}
+}
+document.addEventListener("keydown",inputKeys);
+for(const btn of document.querySelectorAll("[data-dir]")){
+ btn.addEventListener("click",()=>move(...({up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]})[btn.dataset.dir]));
+}
+el("padInteract").addEventListener("click",interact);
+el("actionBtn").addEventListener("click",interact);
+canvas.addEventListener("click",e=>{
+ if(mode!=="none")return;
+ const bounds=canvas.getBoundingClientRect();
+ const x=Math.floor((e.clientX-bounds.left)*canvas.width/bounds.width/TS);
+ const y=Math.floor((e.clientY-bounds.top)*canvas.height/bounds.height/TS);
+ if(x<0||y<0||x>=MW||y>=MH)return;
+ const dx=x-state.pos.x,dy=y-state.pos.y,dist=Math.abs(dx)+Math.abs(dy);
+ if(dist===0)interact();
+ else if(dist===1)move(dx,dy);
+ else toast("点击相邻格子移动；也可以使用下方方向盘。");
+});
+el("saveBtn").addEventListener("click",()=>save(true));
+el("loadBtn").addEventListener("click",()=>load(true));
+el("helpBtn").addEventListener("click",showHelp);
+el("resetBtn").addEventListener("click",confirmReset);
+// A small testing interface. It never alters the normal game loop on its own.
+window.__NAMELESS_RPG__={getState:()=>JSON.parse(JSON.stringify(state)),
+ getMode:()=>mode, getZone:()=>state.zone,
+ move:(dx,dy)=>move(dx,dy),interact,combatAction,
+ setStateForTests:(patch)=>{state={...state,...patch};redrawUI();},
+ inspectMap:zone=>MAPS[zone],validateSave:validate};
+for(const [name,map] of Object.entries(MAPS)){
+ if(map.tiles.length!==MH||map.tiles.some(row=>row.length!==MW))throw Error("Invalid map: "+name);
+ for(const ent of map.entities){if(!passable(name,ent.x,ent.y))throw Error("Invalid entity: "+ent.id);}
+}
+const hadSave=load(false);
+redrawUI();
+requestAnimationFrame(render);
+if(!hadSave||!state.flags.started)onboarding();
+else if(state.flags.ending)toast("欢迎回来。这个世界仍记得你的选择。");
+})();
+</script>
+</body>
+</html>
