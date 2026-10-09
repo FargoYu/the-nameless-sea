@@ -9,9 +9,8 @@
 
 当仓库启用 GitHub Pages 后，访问：
 
-`https://你的GitHub用户名.github.io/the-nameless-sea/`
+`https://FargoYu.github.io/the-nameless-sea/`
 
-（请把 `你的GitHub用户名` 换成实际用户名，且确认仓库名为 `the-nameless-sea`。）
 
 ## 📦 下载离线版
 
